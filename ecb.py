@@ -11,17 +11,17 @@ def encrypt(message, key):
     # flatten out blocks and join to string
     return ''.join([ chr(c) for c in list(*blocks) ])
 
-def encrypt_file(self, file, key):
+def encrypt_file(file, key):
     with open(file, 'r') as f:
-        message = self.encrypt(f.read(), key) # TODO: write
+        message = encrypt(f.read(), key) # TODO: write
 
-def decrypt(self, message, key):
+def decrypt(message, key):
     blocks = core.message_to_blocks([ ord(c) for c in message ])
     for block in blocks:
         core.decrypt_block(block, key)
 
     return ''.join([ chr(c) for c in list(*blocks) ])
 
-def decrypt_file(self, file, key):
+def decrypt_file(file, key):
     with open(file, 'r') as f:
-        message = self.decrypt(f.read(), key) # TODO: write
+        message = decrypt(f.read(), key) # TODO: write
