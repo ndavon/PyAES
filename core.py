@@ -42,11 +42,18 @@ def expand_key(key): # not yet implemented
     return [ [ 0 ] * 16 ] * 11
 
 def add_round_key(block, round_key):
+
+    key = list(round_key)
+    #transform(key)
     for i in range(len(block)):
-        block[i] = block[i] ^ round_key[i]
+        block[i] = (block[i] & 0xFF) ^ (key[i] & 0xFF)
 
 def mix_columns(b):
-    pass
+    for i in range(4):
+        b[i + 0]  = (b[i + 0] * 2) ^ (b[i + 4] * 3) ^ (b[i + 8] * 1) ^ (b[i + 12] * 1)
+        b[i + 4]  = (b[i + 0] * 1) ^ (b[i + 4] * 2) ^ (b[i + 8] * 3) ^ (b[i + 12] * 1)
+        b[i + 8]  = (b[i + 0] * 1) ^ (b[i + 4] * 1) ^ (b[i + 8] * 2) ^ (b[i + 12] * 3)
+        b[i + 12] = (b[i + 0] * 3) ^ (b[i + 4] * 1) ^ (b[i + 8] * 1) ^ (b[i + 12] * 2)
 
 def shift_rows(b):
     b[0],  b[1],  b[2],  b[3]  = b[0],  b[1],  b[2],  b[3]
@@ -56,9 +63,11 @@ def shift_rows(b):
 
 def encrypt_block(block, key):
     round_keys = expand_key(key)
+    print 'Start, block = %s' % ''.join([ hex(x)[2:] for x in block ])
 
     # Initial Round
     add_round_key(block, round_keys[0])
+    print 'R%i (Key = %s) = %s' % (0, '0x' + ''.join([ hex(x)[2:] for x in round_keys[0] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
 
     # Rounds
     for i in range(1, 10):
@@ -66,11 +75,13 @@ def encrypt_block(block, key):
         shift_rows(block)
         mix_columns(block)
         add_round_key(block, round_keys[i])
+        print 'R%i (Key = %s) = %s' % (i, '0x' + ''.join([ hex(x)[2:] for x in round_keys[i] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
 
     # Final Round
     sub_bytes(block)
     shift_rows(block)
     add_round_key(block, round_keys[10])
+    print 'R%i (Key = %s) = %s' % (10, '0x' + ''.join([ hex(x)[2:] for x in round_keys[10] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
 
 def decrypt_block(block, key):
     pass

@@ -2,7 +2,7 @@ import core
 
 def encrypt(message, key):
     # convert message to 128-bit blocks
-    blocks = core.message_to_blocks([ ord(c) for c in message ])
+    blocks = core.message_to_blocks(map(ord, message))
     # transform each block and apply transformation from array to matrix
     for block in blocks:
         core.transform(block)
@@ -16,7 +16,7 @@ def encrypt_file(file, key):
         message = encrypt(f.read(), key) # TODO: write
 
 def decrypt(message, key):
-    blocks = core.message_to_blocks([ ord(c) for c in message ])
+    blocks = core.message_to_blocks(map(ord, message))
     for block in blocks:
         core.decrypt_block(block, key)
 
