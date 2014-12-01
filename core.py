@@ -68,20 +68,19 @@ def sub_bytes(block):
 
 
 #takes a key(list) and expands it from 16 bytes to 176 bytes
-def expand_key(key):         
+def expand_key(key):
     Nk = 4
-    key_size = Nk * 4            
+    key_size = Nk * 4
     new_key_size = 176       # new_key_size = sizeof(dword)*Nb*(Nr+1) = 4*4*11
     key.extend([0] * (new_key_size - key_size))
-    
-    for current_size in range(key_size,new_key_size/4, 4):
+
+    for current_size in range(key_size,new_key_size, 4):
         temp = key[current_size-4:current_size]
         if (current_size/4) % Nk == 0:
             temp = sbox_sub(rotate_list(temp))
-            for i in range (0,4):
-                temp[i] = temp[i] ^ rcon[current_size/Nk+i]
+            temp[0] = temp[0] ^ rcon[(current_size/4)/Nk]
         for i in range(0,4):
-            key[current_size+i] = key[current_size-Nk+i] ^ temp[i]
+            key[current_size+i] = key[current_size-(key_size)+i] ^ temp[i]
 
     return key
 
