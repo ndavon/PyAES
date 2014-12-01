@@ -1,11 +1,10 @@
 
-def message_to_blocks(message):
+def to_blocks(message):
     if len(message) < 16:
-        if len(message):
-            message.extend([ 0 ] * (16 - len(message))) # black magic
+        message.extend([ 0 ] * (16 - len(message))) # black magic
         return [ message ]
     else:
-        return [ message[:16] ] + message_to_blocks(message[16:])
+        return [ message[:16] ] + to_blocks(message[16:]) if len(message) > 16 else [ message[:16 ] ]
 
 def transform(b): # even more black magic
 
@@ -13,6 +12,7 @@ def transform(b): # even more black magic
     b[1], b[5], b[9], b[13], \
     b[2], b[6], b[10], b[14], \
     b[3], b[7], b[11], b[15] = b
+    return b
 
 # http://en.wikipedia.org/wiki/Rijndael_S-box
 sbox = \
@@ -62,11 +62,6 @@ rcon = \
      0xe8, 0xcb 
 ]
 
-def sub_bytes(block):
-    for i in range(len(block)):
-        block[i] = sbox[block[i]]
-
-
 #takes a key(list) and expands it from 16 bytes to 176 bytes
 def expand_key(key):
     Nk = 4
@@ -77,34 +72,48 @@ def expand_key(key):
     for current_size in range(key_size,new_key_size, 4):
         temp = key[current_size-4:current_size]
         if (current_size/4) % Nk == 0:
-            temp = sbox_sub(rotate_list(temp))
+            temp = sbox_sub(rot_word(temp))
             temp[0] = temp[0] ^ rcon[(current_size/4)/Nk]
-        for i in range(0,4):
+        for i in range(4):
             key[current_size+i] = key[current_size-(key_size)+i] ^ temp[i]
 
-    return key
+    return to_blocks(key)
 
 def sbox_sub(block):
-    for i in range(0,len(block)):
+    for i in range(len(block)):
         block[i] = sbox[block[i]]
     return block
 
-def rotate_list(block):
-    return block[1:len(block)] + [block[0]]
+def rot_word(block):
+    return block[1:] + block[:1]
 
 def add_round_key(block, round_key):
-
     key = list(round_key)
-    #transform(key)
+    transform(key)
     for i in range(len(block)):
         block[i] = (block[i] & 0xFF) ^ (key[i] & 0xFF)
 
 def mix_columns(b):
+
+    def mul123(a, b):
+
+        if b is 1:
+            return a
+        elif b is 2:
+            c = a << 1
+            return c ^ 0x1B if a & 0x80 else c
+        else:
+            return mul123(a, 2) ^ a
+
+    cpy = list(b)
     for i in range(4):
-        b[i + 0]  = (b[i + 0] * 2) ^ (b[i + 4] * 3) ^ (b[i + 8] * 1) ^ (b[i + 12] * 1)
-        b[i + 4]  = (b[i + 0] * 1) ^ (b[i + 4] * 2) ^ (b[i + 8] * 3) ^ (b[i + 12] * 1)
-        b[i + 8]  = (b[i + 0] * 1) ^ (b[i + 4] * 1) ^ (b[i + 8] * 2) ^ (b[i + 12] * 3)
-        b[i + 12] = (b[i + 0] * 3) ^ (b[i + 4] * 1) ^ (b[i + 8] * 1) ^ (b[i + 12] * 2)
+        cpy[i + 0]  = (mul123(b[i + 0], 2) & 0xFF) ^ (mul123(b[i + 4], 3) & 0xFF) ^ (mul123(b[i + 8], 1) & 0xFF) ^ (mul123(b[i + 12], 1) & 0xFF)
+        cpy[i + 4]  = (mul123(b[i + 0], 1) & 0xFF) ^ (mul123(b[i + 4], 2) & 0xFF) ^ (mul123(b[i + 8], 3) & 0xFF) ^ (mul123(b[i + 12], 1) & 0xFF)
+        cpy[i + 8]  = (mul123(b[i + 0], 1) & 0xFF) ^ (mul123(b[i + 4], 1) & 0xFF) ^ (mul123(b[i + 8], 2) & 0xFF) ^ (mul123(b[i + 12], 3) & 0xFF)
+        cpy[i + 12] = (mul123(b[i + 0], 3) & 0xFF) ^ (mul123(b[i + 4], 1) & 0xFF) ^ (mul123(b[i + 8], 1) & 0xFF) ^ (mul123(b[i + 12], 2) & 0xFF)
+
+    for i in range(len(cpy)):
+        b[i] = cpy[i]
 
 def shift_rows(b):
     b[0],  b[1],  b[2],  b[3]  = b[0],  b[1],  b[2],  b[3]
@@ -113,26 +122,32 @@ def shift_rows(b):
     b[12], b[13], b[14], b[15] = b[15], b[12], b[13], b[14]
 
 def encrypt_block(block, key):
-    round_keys = expand_key(key)
-    print 'Start, block = %s' % ''.join([ hex(x)[2:] for x in block ])
+    round_keys = expand_key(map(ord, key))
+    #print 'Start, block = %s' % ''.join([ hex(x)[2:] for x in block ])
 
     # Initial Round
     add_round_key(block, round_keys[0])
-    print 'R%i (Key = %s) = %s' % (0, '0x' + ''.join([ hex(x)[2:] for x in round_keys[0] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
+    #print 'R%i (Key = %s) = %s' % (0, '0x' + ''.join([ hex(x)[2:] for x in round_keys[0] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
 
     # Rounds
     for i in range(1, 10):
-        sub_bytes(block)
+        #print 'start of round: ', map(hex, block)
+        sbox_sub(block)
+        #print 'after sub_bytes: ', map(hex, block)
         shift_rows(block)
+        #print 'after shift_rows: ', map(hex, block)
         mix_columns(block)
+        #print 'after mix_columns: ', map(hex, block)
+        #print 'round key: ', map(hex, round_keys[i])
         add_round_key(block, round_keys[i])
-        print 'R%i (Key = %s) = %s' % (i, '0x' + ''.join([ hex(x)[2:] for x in round_keys[i] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
+        #print 'after add_round_key: ', map(hex, block)
+        #print 'R%i (Key = %s) = %s' % (i, '0x' + ''.join([ hex(x)[2:] for x in round_keys[i] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
 
     # Final Round
-    sub_bytes(block)
+    sbox_sub(block)
     shift_rows(block)
     add_round_key(block, round_keys[10])
-    print 'R%i (Key = %s) = %s' % (10, '0x' + ''.join([ hex(x)[2:] for x in round_keys[10] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
+    #print 'R%i (Key = %s) = %s' % (10, '0x' + ''.join([ hex(x)[2:] for x in round_keys[10] ]), '0x' + ''.join([ hex(x)[2:] for x in block ]))
 
 def decrypt_block(block, key):
     pass
