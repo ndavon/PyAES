@@ -1,4 +1,5 @@
 from tables import *
+import array
 
 def to_blocks(message):
     if len(message) < 16:
@@ -64,8 +65,20 @@ def shift_rows(b):
     b[8],  b[9],  b[10], b[11] = b[10], b[11], b[8],  b[9]
     b[12], b[13], b[14], b[15] = b[15], b[12], b[13], b[14]
 
+def hexToList(key):
+    returnlist = list()
+    for i in xrange(0,len(key), 2):
+        returnlist.append(int(key[i],16)*16+int(key[i+1],16))
+    return returnlist
+
+def listToHex(list):
+    string = ""
+    for item in list:
+        string = string + hex(item)[2:]
+    return string;
+
 def encrypt_block(block, key):
-    round_keys = expand_key(map(ord, key))
+    round_keys = expand_key(hexToList(key))
 
     # Initial Round
     add_round_key(block, round_keys[0])
@@ -85,7 +98,8 @@ def encrypt_block(block, key):
 # Decryption methods start here (move to new module?)
 
 def decrypt_block(block, key):
-    round_keys = expand_key(map(ord, key))
+    #round_keys = expand_key(map(ord, key))
+    round_keys = expand_key(hexToList(key))
 
     # Initial Round
     add_round_key(block, round_keys[10])
@@ -126,3 +140,11 @@ def inv_sub_bytes(b):
 
 def mul(a, b):
     return exp_table[(log_table[a] + log_table[b]) % 255] if a and b else 0
+
+#Testmethod
+def hex_to_unicode(hexmessage):
+    return ''.join(map(unichr, [ int(hexmessage[i], 16) * 16 + int(hexmessage[i + 1], 16) for i in range(0, len(hexmessage), 2) ]))
+#    message = ""
+#    for i in range(0,len(hexmessage),2):
+#        message = message + unichr(int(hexmessage[i],16)*16+int(hexmessage[i+1],16))
+#    return message
