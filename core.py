@@ -41,6 +41,9 @@ def rot_word(block):
 def add_round_key(block, round_key):
     key = list(round_key)
     transform(key)
+    xorBlocks(block, key)
+
+def xorBlocks(block, key):
     for i in xrange(len(block)):
         block[i] = (block[i] & 0xFF) ^ (key[i] & 0xFF)
 
@@ -109,7 +112,6 @@ def inv_shift_rows(b):
 def inv_mix_columns(b):
     cpy = list(b)
     for i in xrange(4): # for each column
-        # checken, wieso mul
         cpy[i + 0]  = (mul(b[i + 0], 0xE) & 0xFF) ^ (mul(b[i + 4], 0xB) & 0xFF) ^ (mul(b[i + 8], 0xD) & 0xFF) ^ (mul(b[i + 12], 0x9) & 0xFF)
         cpy[i + 4]  = (mul(b[i + 0], 0x9) & 0xFF) ^ (mul(b[i + 4], 0xE) & 0xFF) ^ (mul(b[i + 8], 0xB) & 0xFF) ^ (mul(b[i + 12], 0xD) & 0xFF)
         cpy[i + 8]  = (mul(b[i + 0], 0xD) & 0xFF) ^ (mul(b[i + 4], 0x9) & 0xFF) ^ (mul(b[i + 8], 0xE) & 0xFF) ^ (mul(b[i + 12], 0xB) & 0xFF)
