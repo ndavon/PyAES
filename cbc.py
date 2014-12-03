@@ -19,8 +19,10 @@ def decrypt(message, key, iv):
     return result
 
 def decrypt_file(file, key, iv):
-    with open(file, 'r') as f:
-        decrypt(f.read(), key, iv)
+    with open(file, 'r') as fr:
+        message = decrypt(fr.read().decode('utf-8'), key, b64) # TODO: write
+        with open('decrypted', 'w') as fw:
+            fw.write(message.encode('utf-8'))
 
 def encrypt(message, key, iv):
     # convert message to 128-bit blocks
@@ -44,7 +46,10 @@ def encrypt(message, key, iv):
     return result
 
 def encrypt_file(file, key, iv):
-    pass
+    with open(file, 'r') as fr:
+        message = encrypt(fr.read(), key, b64) # TODO: write
+        with open('encrypted', 'w') as fw:
+            fw.write(message.encode('utf-8'))
 
 if __name__ == "__main__":
     # er nutzte die Tests aus http://www.inconteam.com/software-development/41-encryption/55-aes-test-vectors#aes-ecb-128
