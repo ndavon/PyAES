@@ -11,7 +11,7 @@ def encrypt(message, key, b64=False):
         core.transform(block)
         core.encrypt_block(block, key)
         core.transform(block)
-        print "cypher for this block: "+core.listToHex(block)
+        print 'Cypher for this block: ', core.listToHex(block)
 
     # flatten out blocks
     flat = list(itertools.chain.from_iterable(blocks))

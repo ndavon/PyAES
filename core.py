@@ -1,5 +1,4 @@
 from tables import *
-import array
 
 def to_blocks(message):
     if len(message) < 16:
@@ -141,10 +140,5 @@ def inv_sub_bytes(b):
 def mul(a, b):
     return exp_table[(log_table[a] + log_table[b]) % 255] if a and b else 0
 
-#Testmethod
 def hex_to_unicode(hexmessage):
     return ''.join(map(unichr, [ int(hexmessage[i], 16) * 16 + int(hexmessage[i + 1], 16) for i in range(0, len(hexmessage), 2) ]))
-#    message = ""
-#    for i in range(0,len(hexmessage),2):
-#        message = message + unichr(int(hexmessage[i],16)*16+int(hexmessage[i+1],16))
-#    return message
