@@ -1,4 +1,5 @@
 from tables import *
+from math import ceil
 
 def to_blocks(message):
     if len(message) < 16:
@@ -142,3 +143,64 @@ def mul(a, b):
 
 def hex_to_unicode(hexmessage):
     return ''.join(map(unichr, [ int(hexmessage[i], 16) * 16 + int(hexmessage[i + 1], 16) for i in range(0, len(hexmessage), 2) ]))
+
+#
+# CMAC-PART
+#
+# Just another fancy hashtag
+# TODO: Overhaul the aes_cmac code for simplification
+
+# Implementation according to http://tools.ietf.org/html/rfc4493#section-1
+# and in obedience of http://csrc.nist.gov/publications/nistpubs/800-38B/SP_800-38B.pdf
+def generate_subkeys(key):
+    block = [0x00]*16
+    transform(block)
+    encrypt_block(block, key)
+    transform(block)
+
+    key1 = create_subkey(list(block), (block[0]&0x80)!=0)
+    key2 = create_subkey(list(key1),  (key1[0] &0x80)!=0)
+    return (key1,key2)
+
+def create_subkey(key, msb_of_key_is_set):
+    shift_array(key,1)
+    if msb_of_key_is_set:
+        key[-1] ^= 0x87 # Rb_const
+    return key
+
+def shift_array(block, shift_num):
+    last_msb = 0x00
+    for i in reversed(range(len(block))):
+        new_msb = block[i] & 0x80
+        block[i] = (block[i] << shift_num) & 0xFF if last_msb == 0 else ((block[i] << shift_num) | 0x01) & 0xFF
+        last_msb = new_msb
+
+# Output is message authentification code
+def aes_cmac(key, message):
+    const_bsize = 16
+    k1, k2 = generate_subkeys(key)
+
+    blocks = to_blocks(map(ord, message))
+    if (len(message) % const_bsize != 0):
+        blocks[-1][(len(message) % const_bsize)] |= 0x80
+    elif len(message) == 0:
+        blocks[0][0] |= 0x80
+
+    leng = len(message)
+    chosen_key = k1 if len(message) != 0 and len(message) % const_bsize == 0 else k2
+    for i in range(16):
+        blocks[-1][i] ^= chosen_key[i]
+
+    y = [0x00]*16
+    for i in range(len(blocks)):
+        if i != 0:
+            for j in range(16):
+                blocks[i][j] = blocks[i-1][j] ^ blocks[i][j]
+        transform(blocks[i])
+        encrypt_block(blocks[i],key)
+        transform(blocks[i])
+
+    return blocks[-1]
+
+def cmac_verify(key,message,cmac):
+    return aes_cmac(key,message) == cmac

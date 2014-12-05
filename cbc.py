@@ -51,6 +51,16 @@ def encrypt_file(file, key, iv):
         with open('encrypted', 'w') as fw:
             fw.write(message.encode('utf-8'))
 
+def list_to_printable_hey(list):
+    return ",".join(hex(n) for n in list)
+
+
+def mac_test(key, message, expected):
+    print "\nMac of String(" + str(len(message)) + " bytes) should be: " + expected
+    mac = core.aes_cmac(key, message)
+    print "MAC: {" + list_to_printable_hey(mac) +"}"
+
+
 if __name__ == "__main__":
     # er nutzte die Tests aus http://www.inconteam.com/software-development/41-encryption/55-aes-test-vectors#aes-ecb-128
     # und er sah, dass es gut war
@@ -66,3 +76,18 @@ if __name__ == "__main__":
     print 'Message: ', testMessage
     print 'Encrypted: ', encrypted
     print 'Decrypted: ', decrypted
+
+    print "\nSubkey-Test (Validation data is taken from http://csrc.nist.gov/publications/nistpubs/800-38B/SP_800-38B.pdf\n"
+
+    print "Subkey1 should be: fbeed618357133667c85e08f7236a8de"
+    print "Subkey2 should be: f7ddac306ae266ccf90bc11ee46d513b"
+    subkey1, subkey2 = core.generate_subkeys("2b7e151628aed2a6abf7158809cf4f3c")
+    print "Key1: {" + list_to_printable_hey(subkey1) +"}"
+    print "Key2: {" + list_to_printable_hey(subkey2) +"}"
+
+    mac_test("2b7e151628aed2a6abf7158809cf4f3c", "", "bb1d6929e95937287fa37d129b756746")
+    mac_test("2b7e151628aed2a6abf7158809cf4f3c", core.hex_to_unicode("6bc1bee22e409f96e93d7e117393172a"), "070a16b46b4d4144f79bdd9dd04a287c")
+    mac_test("2b7e151628aed2a6abf7158809cf4f3c", core.hex_to_unicode("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411"), "dfa66747de9ae63030ca32611497c827")
+
+
+
