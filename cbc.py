@@ -2,6 +2,12 @@ import core
 import itertools
 import copy
 
+def decrypt_cmac(message,key, iv, cmac):
+    decrypted_message = decrypt(message,key,iv)
+    if core.aes_cmac(key,decrypted_message) != cmac:
+        raise Exception("No valid cmac")
+    return decrypted_message
+
 def decrypt(message, key, iv):
     blocks = core.to_blocks(map(ord, message))
     next_cbc_block = core.hexToList(iv) #map(ord, iv)
@@ -23,6 +29,9 @@ def decrypt_file(file, key, iv):
         message = decrypt(fr.read().decode('utf-8'), key, b64) # TODO: write
         with open('decrypted', 'w') as fw:
             fw.write(message.encode('utf-8'))
+
+def encrypt_cmac(message,key, iv):
+    return (encrypt(message,key, iv), core.aes_cmac(key,message))
 
 def encrypt(message, key, iv):
     # convert message to 128-bit blocks
@@ -76,6 +85,17 @@ if __name__ == "__main__":
     print 'Message: ', testMessage
     print 'Encrypted: ', encrypted
     print 'Decrypted: ', decrypted
+
+
+    encrypted, cmac = encrypt_cmac(testMessage, testKey, testIv)
+    decrypted = decrypt_cmac(encrypted, testKey, testIv, cmac)
+
+    print "\n CMAC-Validation Encrytion:"
+    print 'Message: ', testMessage
+    print 'Encrypted: ', encrypted
+    print 'CMAC: ' , cmac
+    print 'Decrypted: ', decrypted
+
 
     print "\nSubkey-Test (Validation data is taken from http://csrc.nist.gov/publications/nistpubs/800-38B/SP_800-38B.pdf\n"
 

@@ -2,6 +2,8 @@ from CodeWarrior.CodeWarrior_suite import message_document
 import core
 import itertools
 
+
+
 def encrypt(message, key, b64=False):
     # convert message to 128-bit blocks
     blocks = core.to_blocks(map(ord, message))
