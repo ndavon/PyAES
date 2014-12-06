@@ -2,6 +2,17 @@ import core
 import itertools
 import copy
 
+def transform_printable_to_list(flat):
+    result = flat.split(',')
+    intList = []
+    for i in result:
+        intList.append(int(i,0))
+    return intList
+
+def transform_list_to_printable(flat):
+    result = ','.join(map(hex, flat))
+    return result
+
 def decrypt_cmac(message,key, iv, cmac):
     decrypted_message = decrypt(message,key,iv)
     if core.aes_cmac(key,decrypted_message) != cmac:
@@ -24,9 +35,17 @@ def decrypt(message, key, iv):
     result = ''.join(map(unichr, flat))
     return result
 
+def decrypt_file_cmac(file,key,iv,cmac_file):
+    with open(file, 'r') as fr:
+        with open(cmac_file, 'r') as handle_cmac:
+            message = decrypt_cmac(fr.read().decode('utf-8'), key, iv,
+                          transform_printable_to_list(handle_cmac.read().decode('utf-8')))
+    with open('decrypted', 'w') as fw:
+        fw.write(message.encode('utf-8'))
+
 def decrypt_file(file, key, iv):
     with open(file, 'r') as fr:
-        message = decrypt(fr.read().decode('utf-8'), key, b64) # TODO: write
+        message = decrypt(fr.read().decode('utf-8'), key, iv)
         with open('decrypted', 'w') as fw:
             fw.write(message.encode('utf-8'))
 
@@ -54,9 +73,18 @@ def encrypt(message, key, iv):
     result = ''.join(map(unichr, flat))
     return result
 
+def encrypt_file_cmac(file,key,iv):
+    with open(file, 'r') as fr:
+        message, cmac = encrypt_cmac(fr.read(), key, iv)
+        with open('encrypted', 'w') as fw:
+            fw.write(message.encode('utf-8'))
+        with open('encrypted.sig', 'w') as sigFile:
+            print cmac
+            sigFile.write(transform_list_to_printable(cmac).encode('utf-8'))
+
 def encrypt_file(file, key, iv):
     with open(file, 'r') as fr:
-        message = encrypt(fr.read(), key, b64) # TODO: write
+        message = encrypt(fr.read(), key, iv)
         with open('encrypted', 'w') as fw:
             fw.write(message.encode('utf-8'))
 
@@ -68,7 +96,6 @@ def mac_test(key, message, expected):
     print "\nMac of String(" + str(len(message)) + " bytes) should be: " + expected
     mac = core.aes_cmac(key, message)
     print "MAC: {" + list_to_printable_hey(mac) +"}"
-
 
 if __name__ == "__main__":
     # er nutzte die Tests aus http://www.inconteam.com/software-development/41-encryption/55-aes-test-vectors#aes-ecb-128
@@ -109,5 +136,7 @@ if __name__ == "__main__":
     mac_test("2b7e151628aed2a6abf7158809cf4f3c", core.hex_to_unicode("6bc1bee22e409f96e93d7e117393172a"), "070a16b46b4d4144f79bdd9dd04a287c")
     mac_test("2b7e151628aed2a6abf7158809cf4f3c", core.hex_to_unicode("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411"), "dfa66747de9ae63030ca32611497c827")
 
+    encrypt_file_cmac("message.txt","2b7e151628aed2a6abf7158809cf4f3c", "2b7e151628aed2a6abf7158809cf4f3c")
+    decrypt_file_cmac("encrypted","2b7e151628aed2a6abf7158809cf4f3c", "2b7e151628aed2a6abf7158809cf4f3c", "encrypted.sig")
 
 
