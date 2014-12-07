@@ -65,20 +65,8 @@ def shift_rows(b):
     b[8],  b[9],  b[10], b[11] = b[10], b[11], b[8],  b[9]
     b[12], b[13], b[14], b[15] = b[15], b[12], b[13], b[14]
 
-def hexToList(key):
-    returnlist = list()
-    for i in xrange(0,len(key), 2):
-        returnlist.append(int(key[i],16)*16+int(key[i+1],16))
-    return returnlist
-
-def listToHex(list):
-    string = ""
-    for item in list:
-        string = string + hex(item)[2:]
-    return string;
-
 def encrypt_block(block, key):
-    round_keys = expand_key(hexToList(key))
+    round_keys = expand_key(hex_to_list(key))
 
     # Initial Round
     add_round_key(block, round_keys[0])
@@ -99,7 +87,7 @@ def encrypt_block(block, key):
 
 def decrypt_block(block, key):
     #round_keys = expand_key(map(ord, key))
-    round_keys = expand_key(hexToList(key))
+    round_keys = expand_key(hex_to_list(key))
 
     # Initial Round
     add_round_key(block, round_keys[10])
@@ -142,8 +130,13 @@ def mul(a, b):
     return exp_table[(log_table[a] + log_table[b]) % 255] if a and b else 0
 
 def hex_to_unicode(hexmessage):
-    return ''.join(map(unichr, [ int(hexmessage[i], 16) * 16 + int(hexmessage[i + 1], 16) for i in range(0, len(hexmessage), 2) ]))
+    return ''.join(map(unichr, [ int(hexmessage[i], 16) * 16 + int(hexmessage[i + 1], 16) for i in xrange(0, len(hexmessage), 2) ]))
 
+def hex_to_list(key):
+    return [ int(key[i], 16) * 16 + int(key[i+1], 16) for i in xrange(0, len(key), 2) ]
+
+def list_to_hex(list):
+    return ''.join([ (hex(item)[2:] if len(hex(item)[2:]) > 1 else '0' + hex(item)[2:]) for item in list ])
 #
 # CMAC-PART
 #
