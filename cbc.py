@@ -3,9 +3,9 @@ import itertools
 import copy
 
 def decrypt_cmac(message, key, iv, cmac):
-    decrypted_message = decrypt(message, key, iv)
-
-    if core.aes_cmac(key, core.hex_to_unicode(decrypted_message)) != cmac:
+    decrypted_message = core.hex_to_unicode(decrypt(message, key, iv))
+    new_cmac = core.aes_cmac(key, decrypted_message)
+    if new_cmac != cmac:
         raise Exception('No valid cmac')
     return decrypted_message
 
@@ -28,7 +28,7 @@ def decrypt(message, key, iv):
 def decrypt_file_cmac(file, key, iv, cmac_file):
     with open(file, 'r') as fr:
         with open(cmac_file, 'r') as handle_cmac:
-            message = decrypt_cmac(fr.read(), key, iv, handle_cmac.read())
+            message = decrypt_cmac(fr.read(), key, iv, core.hex_to_list(handle_cmac.read()))
     with open('decrypted', 'w') as fw:
         print 'decrypted message: ', message
         fw.write(message)
@@ -64,7 +64,7 @@ def encrypt(message, key, iv):
 
 def encrypt_file_cmac(file, key, iv):
     with open(file, 'r') as fr:
-        message, cmac = encrypt_cmac(fr.read(), key, iv)
+        message, cmac = encrypt_cmac(unicode(fr.read()), key, iv)
         with open('encrypted', 'w') as fw:
             fw.write(message)
         with open('encrypted.sig', 'w') as sigFile:
@@ -72,7 +72,7 @@ def encrypt_file_cmac(file, key, iv):
 
 def encrypt_file(file, key, iv):
     with open(file, 'r') as fr:
-        message = encrypt(fr.read(), key, iv)
+        message = encrypt(unicode(fr.read()), key, iv)
         with open('encrypted', 'w') as fw:
             fw.write(message)
 
